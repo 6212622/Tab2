@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отчет</title>
+</head>
+<body>
+    <h1>Сформировать отчет</h1>
+
+    <!-- Сообщение об ошибке, если данные некорректны -->
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    <!-- Форма для ввода данных -->
+    <form method="GET" action="{% url 'employee_report' %}">
+        <label for="tabnumber">Номер табеля:</label>
+        <input type="text" id="tabnumber" name="tabnumber" required><br>
+
+        <label for="month">Месяц:</label>
+        <input type="text" id="month" name="month" required><br>
+
+        <label for="year">Год:</label>
+        <input type="text" id="year" name="year" required><br>
+
+        <button type="submit">Сформировать</button>
+    </form>
+
+    <!-- Отображение отчета -->
+    {% if report %}
+        <h2>Отчет по дням</h2>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>День</th>
+                    <th>Время</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for day in days %}
+                    <tr>
+                        <td>{{ day.day }}</td>
+                        <td>{{ day.time }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Нет данных для отображения.</p>
+    {% endif %}
+</body>
+</html>
