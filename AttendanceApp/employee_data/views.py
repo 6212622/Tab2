@@ -1,42 +1,28 @@
 from django.shortcuts import render
-from employee_data.cal import calculate_work_time_for_month
+from django.http import HttpResponse
+from .services import fill_schedule_for_year
+from .models import ShiftSchedule
+from datetime import datetime
 
-def employee_report(request):
-    report = None
-    non_empty_days = []
-    empty_days = []
-    error = None
-    days = []
-
-    if request.method == 'GET':
-        tabnumber = request.GET.get('tabnumber')
-        month = request.GET.get('month')
-        year = request.GET.get('year')
-
-        if not tabnumber or not month or not year:
-            return render(request, 'report.html', {'report': None, 'days': [], 'error': None})
-
+def fill_schedule(request):
+    if request.method == 'POST':
+        year = request.POST.get('year')
+        shift_1_brigade_1 = request.POST.get('shift_1_brigade_1')
+        shift_1_brigade_2 = request.POST.get('shift_1_brigade_2')
+        shift_2_brigade_1 = request.POST.get('shift_2_brigade_1')
+        shift_2_brigade_2 = request.POST.get('shift_2_brigade_2')
+        shift_2_brigade_3 = request.POST.get('shift_2_brigade_3')
+        shift_2_brigade_4 = request.POST.get('shift_2_brigade_4')
+        print(f"Получен запрос на формирование расписания для года: {year}")
         try:
-            tabnumber = int(tabnumber)
-            month = int(month)
             year = int(year)
-
-            print(f"Данные из формы: tabnumber={tabnumber}, month={month}, year={year}")
-            print(f"Типы данных: tabnumber={type(tabnumber)}, month={type(month)}, year={type(year)}")
-
-            report, non_empty_days, empty_days = calculate_work_time_for_month(tabnumber, month, year)
-            print(f"Отчет, полученный из функции: {report}")
-
-            # Объединение и сортировка дней
-            days = [{'day': day, 'time': report['times'][report['days'].index(day)]} for day in non_empty_days] + [{'day': day, 'time': '0ч.0м.'} for day in empty_days]
-            days.sort(key=lambda x: x['day'])
-
+            start_date = datetime(year, 1, 1)
+            print(f"Начальная дата: {start_date}")
+            fill_schedule_for_year(start_date, shift_1_brigade_1, shift_1_brigade_2, shift_2_brigade_1, shift_2_brigade_2, shift_2_brigade_3, shift_2_brigade_4)
+            schedule = ShiftSchedule.objects.filter(date__year=year)
+            print(f"Сформированное расписание: {schedule}")
+            return render(request, 'report.html', {'schedule': schedule, 'year': year})
         except ValueError:
-            error = "Пожалуйста, введите корректные числовые значения для всех полей."
-            print(error)
-        except Exception as e:
-            print(f"Типы данных: tabnumber={type(tabnumber)}, month={type(month)}, year={type(year)}")
-            error = f"Ошибка при создании отчёта: {e}"
-            print(error)
-
-    return render(request, 'report.html', {'report': report, 'days': days, 'error': error})
+            print("Ошибка: Неверный формат года.")
+            return HttpResponse("Неверный формат года.")
+    return render(request, 'report.html')

@@ -1,43 +1,29 @@
-from django.shortcuts import render
-from django.http import HttpResponseBadRequest
-from datetime import datetime
-from collections import defaultdict
-from employee_data.cal import calculate_work_time_for_month
-import logging
-from datetime import date
+from datetime import datetime, timedelta
+from .models import ShiftSchedule
 
+def fill_schedule_for_year(start_date, shift_1_brigade_1, shift_1_brigade_2, shift_2_brigade_1, shift_2_brigade_2, shift_2_brigade_3, shift_2_brigade_4):
+    # Удаляем существующие записи для указанного года
+    ShiftSchedule.objects.filter(date__year=start_date.year).delete()
 
-logger = logging.getLogger(__name__)
+    # Определяем смены и бригады
+    shifts_1 = ["1 день", "2 день", "1 выходной", "2 выходной"]
+    shifts_2 = ["ночь", "отсыпной", "выходной", "день"]
 
-def employee_report(request):
-    logger.info(f"Request GET data: {request.GET}")
-    # Получение параметров из формы
-    tabnumber = int(request.GET.get("tabnumber"))
-    month = int(request.GET.get("month"))
-    year = int(request.GET.get("year"))
+    # Проходим по каждому дню года
+    for day in range(365):
+        current_date = start_date + timedelta(days=day)
+        shift_schedule = ShiftSchedule(date=current_date)
+        
+        # Логика распределения смен по дням для 1-й смены
+        shift_schedule.shift_1_brigade_1 = shifts_1[(shifts_1.index(shift_1_brigade_1) + day) % 4]
+        shift_schedule.shift_1_brigade_2 = shifts_1[(shifts_1.index(shift_1_brigade_2) + day) % 4]
 
-    print(f"Данные из формы: tabnumber={tabnumber}, month={month}, year={year}")
+        # Логика распределения смен по дням для 2-й смены
+        shift_schedule.shift_2_brigade_1 = shifts_2[(shifts_2.index(shift_2_brigade_1) + day) % 4]
+        shift_schedule.shift_2_brigade_2 = shifts_2[(shifts_2.index(shift_2_brigade_2) + day) % 4]
+        shift_schedule.shift_2_brigade_3 = shifts_2[(shifts_2.index(shift_2_brigade_3) + day) % 4]
+        shift_schedule.shift_2_brigade_4 = shifts_2[(shifts_2.index(shift_2_brigade_4) + day) % 4]
 
-    # Проверка обязательных параметров
-    if not (tabnumber and month and year):
-        return HttpResponseBadRequest("Табельный номер, месяц и год обязательны для ввода!")
-
-    try:
-        tabnumber = int(tabnumber)
-        month = int(month)
-        year = int(year)
-    except ValueError:
-        return HttpResponseBadRequest("Неверные данные: табельный номер, месяц и год должны быть числами.")
-
-    # Логика формирования отчета
-    report = calculate_work_time_for_month(tabnumber, month, year)
-    # Форматируем дату отчета
-
-    report_date = date(year, month, 1).strftime("%d.%m.%Y")
-
-    return render(request, 'report.html', {
-        'month': month,
-        'year': year,
-        'tabnumber': tabnumber,
-        'report': report
-    })
+        shift_schedule.save()
+    
+    print("Заполнение расписания завершено.")

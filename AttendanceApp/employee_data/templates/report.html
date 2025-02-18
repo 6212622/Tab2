@@ -3,51 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Отчет</title>
+    <title>Сформировать расписание</title>
+    <style>
+        .working {
+            color: green;
+        }
+        .not-working {
+            color: red;
+        }
+    </style>
 </head>
 <body>
-    <h1>Сформировать отчет</h1>
+    <h1>Сформировать расписание</h1>
 
-    <!-- Сообщение об ошибке, если данные некорректны -->
-    {% if error %}
-        <p style="color: red;">{{ error }}</p>
-    {% endif %}
-
-    <!-- Форма для ввода данных -->
-    <form method="GET" action="{% url 'employee_report' %}">
-        <label for="tabnumber">Номер табеля:</label>
-        <input type="text" id="tabnumber" name="tabnumber" required><br>
-
-        <label for="month">Месяц:</label>
-        <input type="text" id="month" name="month" required><br>
-
+    <!-- Форма для ввода года и начальных данных -->
+    <form method="POST" action="{% url 'fill_schedule' %}">
+        {% csrf_token %}
         <label for="year">Год:</label>
-        <input type="text" id="year" name="year" required><br>
+        <input type="number" id="year" name="year" required><br>
+
+        <h2>Начальные данные для 1 января</h2>
+        
+        <h3>1-смена</h3>
+        <label for="shift_1_brigade_1">1-бригада:</label>
+        <select id="shift_1_brigade_1" name="shift_1_brigade_1" required>
+            <option value="1 день">1 день</option>
+            <option value="2 день">2 день</option>
+            <option value="1 выходной">1 выходной</option>
+            <option value="2 выходной">2 выходной</option>
+        </select><br>
+
+        <label for="shift_1_brigade_2">2-бригада:</label>
+        <select id="shift_1_brigade_2" name="shift_1_brigade_2" required>
+            <option value="1 день">1 день</option>
+            <option value="2 день">2 день</option>
+            <option value="1 выходной">1 выходной</option>
+            <option value="2 выходной">2 выходной</option>
+        </select><br>
+
+        <h3>2-смена</h3>
+        <label for="shift_2_brigade_1">1-бригада:</label>
+        <select id="shift_2_brigade_1" name="shift_2_brigade_1" required>
+            <option value="ночь">Ночь</option>
+            <option value="выходной">Выходной</option>
+            <option value="день">День</option>
+            <option value="отсыпной">Отсыпной</option>
+        </select><br>
+
+        <label for="shift_2_brigade_2">2-бригада:</label>
+        <select id="shift_2_brigade_2" name="shift_2_brigade_2" required>
+            <option value="ночь">Ночь</option>
+            <option value="выходной">Выходной</option>
+            <option value="день">День</option>
+            <option value="отсыпной">Отсыпной</option>
+        </select><br>
+
+        <label for="shift_2_brigade_3">3-бригада:</label>
+        <select id="shift_2_brigade_3" name="shift_2_brigade_3" required>
+            <option value="ночь">Ночь</option>
+            <option value="выходной">Выходной</option>
+            <option value="день">День</option>
+            <option value="отсыпной">Отсыпной</option>
+        </select><br>
+
+        <label for="shift_2_brigade_4">4-бригада:</label>
+        <select id="shift_2_brigade_4" name="shift_2_brigade_4" required>
+            <option value="ночь">Ночь</option>
+            <option value="выходной">Выходной</option>
+            <option value="день">День</option>
+            <option value="отсыпной">Отсыпной</option>
+        </select><br>
 
         <button type="submit">Сформировать</button>
     </form>
 
-    <!-- Отображение отчета -->
-    {% if report %}
-        <h2>Отчет по дням</h2>
+    <!-- Отображение информации о сформированном расписании -->
+    <!-- {% if schedule %}
+        <h2>Расписание на {{ year }}</h2>
         <table border="1">
             <thead>
                 <tr>
-                    <th>День</th>
-                    <th>Время</th>
+                    <th>Дата</th>
+                    <th>1-смена, 1-бригада</th>
+                    <th>1-смена, 2-бригада</th>
+                    <th>2-смена, 1-бригада</th>
+                    <th>2-смена, 2-бригада</th>
+                    <th>2-смена, 3-бригада</th>
+                    <th>2-смена, 4-бригада</th>
+                    <th>3-смена</th>
+                    <th>5-смена, 1-бригада</th>
+                    <th>5-смена, 2-бригада</th>
+                    <th>6-смена</th>
+                    <th>7-смена</th>
                 </tr>
             </thead>
             <tbody>
-                {% for day in days %}
+                 {% for entry in schedule %}
                     <tr>
-                        <td>{{ day.day }}</td>
-                        <td>{{ day.time }}</td>
+                        <td>{{ entry.date }}</td>
+                        <td>{{ entry.shift_1_brigade_1 }}</td>
+                        <td>{{ entry.shift_1_brigade_2 }}</td>
+                        <td>{{ entry.shift_2_brigade_1 }}</td>
+                        <td>{{ entry.shift_2_brigade_2 }}</td>
+                        <td>{{ entry.shift_2_brigade_3 }}</td>
+                        <td>{{ entry.shift_2_brigade_4 }}</td>
+                        <td>{{ entry.shift_3 }}</td>
+                        <td>{{ entry.shift_5_brigade_1 }}</td>
+                        <td>{{ entry.shift_5_brigade_2 }}</td>
+                        <td>{{ entry.shift_6 }}</td>
+                        <td>{{ entry.shift_7 }}</td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
-    {% else %}
-        <p>Нет данных для отображения.</p>
-    {% endif %}
-</body>
+        <button onclick="window.print()">Распечатать</button>
+    {% endif %} -->
+</body> 
 </html>
