@@ -11,27 +11,92 @@
         .status-not-working {
             background-color: lightcoral;
         }
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .top, .middle, .bottom {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        .employee-info {
+            margin-bottom: 10px;
+        }
+        .employee-list {
+            overflow-y: auto;
+        }
+        .employee-list-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px;
+            border-bottom: 1px solid #ccc;
+            cursor: pointer;
+        }
+        .employee-list-item:hover {
+            background-color: #f0f0f0;
+        }
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+        .not-found {
+            background-color: rgba(255, 0, 0, 0.5);
+            padding: 20px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <h1>Статус сотрудника</h1>
-    <form method="POST">
-        {% csrf_token %}
-        <label for="card_number">Введите номер карты:</label>
-        <input type="text" id="card_number" name="card_number" required>
-        <button type="submit">Проверить</button>
-    </form>
-
-    {% if employee %}
-        <div class="employee-info {% if status == 'работает' %}status-working{% else %}status-not-working{% endif %}">
-            <h2>Информация о сотруднике</h2>
-            <p><strong>ФИО:</strong> {{ employee.OwnerName }}</p>
-            <p><strong>Табельный номер:</strong> {{ employee.tabnumber }}</p>
-            <p><strong>Статус:</strong> {{ status }}</p>
-            <p><strong>Текущая смена:</strong> {{ current_shift }}</p>
-            <p><strong>Дата:</strong> {{ current_date }}</p>
-            <p><strong>Время:</strong> {{ current_time }}</p>
+    <div class="container">
+        <!-- Верхняя часть -->
+        <div class="top">
+            <h1>Информация о сотруднике</h1>
+            {% if employee %}
+                <div class="employee-info {% if status == 'работает' %}status-working{% else %}status-not-working{% endif %}">
+                    <p><strong>ФИО:</strong> {{ employee.OwnerName }}</p>
+                    <p><strong>Табельный номер:</strong> {{ employee.tabnumber }}</p>
+                    <p><strong>Статус:</strong> {{ status }}</p>
+                    <p><strong>Текущая смена:</strong> {{ current_shift }}</p>
+                    <p><strong>Дата:</strong> {{ current_date }}</p>
+                    <p><strong>Время:</strong> {{ current_time }}</p>
+                </div>
+            {% elif not_found %}
+                <div class="not-found">
+                    Сотрудник не найден
+                </div>
+            {% else %}
+                <p>Информация о сотруднике будет отображаться здесь.</p>
+            {% endif %}
         </div>
-    {% endif %}
+
+        <!-- Средняя часть -->
+        <div class="middle">
+            <h2>Список введенных сотрудников</h2>
+            <div class="employee-list">
+                {% for emp in employee_list %}
+                    <div class="employee-list-item" onclick="showEmployee('{{ emp.tabnumber }}')">
+                        <span>{{ emp.tabnumber }} - {{ emp.OwnerName }}</span>
+                        <div class="status-indicator {% if emp.status == 'работает' %}status-working{% else %}status-not-working{% endif %}"></div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Нижняя часть -->
+        <div class="bottom">
+            <h2>Введите номер карты</h2>
+            <form method="POST">
+                {% csrf_token %}
+                <label for="card_number">Введите номер карты:</label>
+                <input type="text" id="card_number" name="card_number" required autofocus>
+                <button type="submit">Проверить</button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>

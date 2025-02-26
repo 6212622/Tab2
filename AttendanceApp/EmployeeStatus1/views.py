@@ -4,9 +4,17 @@ from .models import Employee
 from employee_data.models import ShiftSchedule  # Измените импорт на относительный
 from datetime import datetime
 
+# Хранение списка введенных сотрудников
+employee_list = []
+
 def employee_status(request):
+    global employee_list
     if request.method == 'POST':
         card_number = request.POST.get('card_number')
+        if not card_number:
+            print("Номер карты не введен")
+            return HttpResponse("Номер карты не введен")
+
         last_four_digits = card_number[-4:]
         print(f"Получен номер карты: {card_number}, последние четыре цифры: {last_four_digits}")
 
@@ -14,7 +22,11 @@ def employee_status(request):
             employees = Employee.find_by_last_four_digits(last_four_digits)
             if not employees:
                 print("Сотрудник не найден")
-                return HttpResponse("Сотрудник не найден")
+                context = {
+                    'employee_list': employee_list,
+                    'not_found': True
+                }
+                return render(request, 'employee_status.html', context)
 
             # Предполагаем, что возвращается одна запись
             employee_data = employees[0]
@@ -42,12 +54,20 @@ def employee_status(request):
                 status = 'работает'
             print(f"Статус сотрудника: {status}")
 
+            # Добавляем сотрудника в список
+            employee_list.append({
+                'tabnumber': employee.tabnumber,
+                'OwnerName': employee.OwnerName,
+                'status': status
+            })
+
             context = {
                 'employee': employee,
                 'status': status,
                 'current_shift': current_shift,
                 'current_date': current_date,
                 'current_time': current_time,
+                'employee_list': employee_list
             }
             print(f"Контекст для шаблона: {context}")
             return render(request, 'employee_status.html', context)
@@ -55,4 +75,4 @@ def employee_status(request):
             print("Расписание на текущую дату не найдено")
             return HttpResponse("Расписание на текущую дату не найдено")
     print("Метод запроса не POST, отображение пустой формы")
-    return render(request, 'employee_status.html')
+    return render(request, 'employee_status.html', {'employee_list': employee_list})
