@@ -39,6 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'employee_data',
     'schedule',
+    'EmployeeStatus1',
+    
+
 ]
 
 MIDDLEWARE = [

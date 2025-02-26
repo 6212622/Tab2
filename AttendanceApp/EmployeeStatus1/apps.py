@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class EmploemployeestatusConfig(AppConfig):
+class Employeestatus1Config(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'EmploEmployeeStatus'
+    name = 'EmployeeStatus1'
