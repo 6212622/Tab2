@@ -1,8 +1,9 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from .models import Employee
-from employee_data.models import ShiftSchedule  # Измените импорт на относительный
+from employee_data.models import ShiftSchedule
 from datetime import datetime
+from django.db import connection
 
 # Хранение списка введенных сотрудников
 employee_list = []
@@ -35,42 +36,76 @@ def employee_status(request):
             current_date = datetime.now().date()
             current_time = datetime.now().time()
             print(f"Текущая дата: {current_date}, текущее время: {current_time}")
-            shift_schedule = ShiftSchedule.objects.get(date=current_date)
-            print(f"Найдено расписание на текущую дату: {shift_schedule}")
 
-            # Определяем текущую смену
-            current_shift = None
-            if current_time >= datetime.strptime('20:00', '%H:%M').time() or current_time < datetime.strptime('08:00', '%H:%M').time():
-                current_shift = 'ночь'
-            elif current_time >= datetime.strptime('08:00', '%H:%M').time() and current_time < datetime.strptime('20:00', '%H:%M').time():
-                current_shift = 'день'
-            print(f"Текущая смена: {current_shift}")
+            # Получаем расписание сотрудника из таблицы EmployeeSchedule
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT FullName, Schedule, TabNumber FROM tabel.dbo.EmployeeSchedule WHERE TabNumber = %s", [employee.tabnumber])
+                schedule_row = cursor.fetchone()
+                print(schedule_row)
 
-            # Проверяем, находится ли сотрудник в текущей смене
-            status = 'не работает'
-            if current_shift == 'ночь' and (shift_schedule.shift_2_brigade_1 == 'ночь' or shift_schedule.shift_2_brigade_2 == 'ночь' or shift_schedule.shift_2_brigade_3 == 'ночь' or shift_schedule.shift_2_brigade_4 == 'ночь'):
-                status = 'работает'
-            elif current_shift == 'день' and (shift_schedule.shift_2_brigade_1 == 'день' or shift_schedule.shift_2_brigade_2 == 'день' or shift_schedule.shift_2_brigade_3 == 'день' or shift_schedule.shift_2_brigade_4 == 'день'):
-                status = 'работает'
-            print(f"Статус сотрудника: {status}")
+            if schedule_row:
+                schedule = str(schedule_row[1])  # Преобразуем в строку, если это не строка
+                shift = schedule[0]  # Первая цифра - номер смены
+                brigade = schedule[1]  # Вторая цифра - номер бригады
+                print(f"Расписание сотрудника: смена {shift}, бригада {brigade}")
 
-            # Добавляем сотрудника в список
-            employee_list.append({
-                'tabnumber': employee.tabnumber,
-                'OwnerName': employee.OwnerName,
-                'status': status
-            })
+                # Получаем расписание смен на текущую дату
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT * FROM tabel.dbo.employee_data_shiftschedule WHERE date = %s", [current_date])
+                    shift_schedule_row = cursor.fetchone()
 
-            context = {
-                'employee': employee,
-                'status': status,
-                'current_shift': current_shift,
-                'current_date': current_date,
-                'current_time': current_time,
-                'employee_list': employee_list
-            }
-            print(f"Контекст для шаблона: {context}")
-            return render(request, 'employee_status.html', context)
+                if shift_schedule_row:
+                    shift_schedule = ShiftSchedule.objects.get(date=current_date)
+                    print(f"Найдено расписание на текущую дату: {shift_schedule}")
+
+                    # Определяем текущую смену
+                    current_shift = None
+                    if current_time >= datetime.strptime('20:00', '%H:%M').time() or current_time < datetime.strptime('08:00', '%H:%M').time():
+                        current_shift = 'ночь'
+                    elif current_time >= datetime.strptime('08:00', '%H:%M').time() and current_time < datetime.strptime('20:00', '%H:%M').time():
+                        current_shift = 'день'
+                    print(f"Текущая смена: {current_shift}")
+
+                    # Сопоставление смен и бригад
+                    shift_mapping = {
+                        ('2', '1'): shift_schedule.shift_2_brigade_1,
+                        ('2', '2'): shift_schedule.shift_2_brigade_2,
+                        ('2', '3'): shift_schedule.shift_2_brigade_3,
+                        ('2', '4'): shift_schedule.shift_2_brigade_4,
+                    }
+
+                    current_brigade_shift = shift_mapping.get((shift, brigade))
+                    print(f"Текущая смена бригады: {current_brigade_shift}")
+
+                    # Проверяем, находится ли сотрудник в текущей смене
+                    status = 'работает' if current_shift == current_brigade_shift else 'не работает'
+                    print(f"Статус сотрудника: {status}")
+
+                    # Добавляем сотрудника в список
+                    employee_list.append({
+                        'tabnumber': employee.tabnumber,
+                        'OwnerName': employee.OwnerName,
+                        'status': status
+                    })
+
+                    context = {
+                        'employee': employee,
+                        'status': status,
+                        'current_shift': current_shift,
+                        'current_brigade_shift': current_brigade_shift,
+                        'current_date': current_date,
+                        'current_time': current_time,
+                        'employee_list': employee_list,
+                        'shift_schedule': shift_schedule
+                    }
+                    print(f"Контекст для шаблона: {context}")
+                    return render(request, 'employee_status.html', context)
+                else:
+                    print("❌ Расписание на текущую дату не найдено")
+                    return HttpResponse("Расписание на текущую дату не найдено")
+            else:
+                print("❌ Расписание сотрудника не найдено")
+                return HttpResponse("Расписание сотрудника не найдено")
         except ShiftSchedule.DoesNotExist:
             print("Расписание на текущую дату не найдено")
             return HttpResponse("Расписание на текущую дату не найдено")
