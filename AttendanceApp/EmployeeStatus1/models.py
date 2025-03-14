@@ -14,3 +14,14 @@ class Employee(models.Model):
             cursor.execute("SELECT * FROM tabel.dbo.tabbnumber WHERE ProcessedCodeP = %s", [last_four_digits])
             rows = cursor.fetchall()
             return rows
+
+class Report(models.Model):
+    tabnumber = models.CharField(max_length=255)
+    owner_name = models.CharField(max_length=255)
+    shift = models.CharField(max_length=1)
+    brigade = models.CharField(max_length=1)
+    date = models.DateField()
+    status = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.tabnumber} - {self.owner_name} - {self.date}"

@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-from .models import Employee
+from .models import Employee, Report
 from employee_data.models import ShiftSchedule
 from datetime import datetime
 from django.db import connection
@@ -91,6 +91,22 @@ def employee_status(request):
                         status = 'работает' if current_shift == current_brigade_shift else 'не работает'
                     print(f"Статус сотрудника: {status}")
 
+                    # Проверяем, есть ли запись в отчете на текущую дату
+                    report_exists = Report.objects.filter(tabnumber=employee.tabnumber, date=current_date).exists()
+                    if report_exists or status == 'не работает':
+                        print("Повторный ввод")
+                        status = 'повторный ввод'
+                    else:
+                        # Сохраняем запись в отчет
+                        Report.objects.create(
+                            tabnumber=employee.tabnumber,
+                            owner_name=employee.OwnerName,
+                            shift=shift,
+                            brigade=brigade,
+                            date=current_date,
+                            status=status
+                        )
+
                     # Добавляем сотрудника в список
                     employee_list.append({
                         'tabnumber': employee.tabnumber,
@@ -122,3 +138,22 @@ def employee_status(request):
             return HttpResponse("Расписание на текущую дату не найдено")
     print("Метод запроса не POST, отображение пустой формы")
     return render(request, 'employee_status.html', {'employee_list': employee_list})
+
+from django.shortcuts import render
+from .models import Report
+
+def report_view(request):
+    reports = Report.objects.all().order_by('-date')
+    if request.method == 'POST':
+        date_range = request.POST.get('date_range')
+        if date_range == 'day':
+            selected_date = request.POST.get('selected_date')
+            reports = Report.objects.filter(date=selected_date).order_by('-date')
+        elif date_range == 'month':
+            selected_month = request.POST.get('selected_month')
+            year, month = selected_month.split('-')
+            reports = Report.objects.filter(date__year=year, date__month=month).order_by('-date')
+        elif date_range == 'year':
+            selected_year = request.POST.get('selected_year')
+            reports = Report.objects.filter(date__year=selected_year).order_by('-date')
+    return render(request, 'report1.html', {'reports': reports})

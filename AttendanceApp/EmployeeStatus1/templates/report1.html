@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отчеты</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Отчеты</h1>
+    <form method="POST">
+        {% csrf_token %}
+        <label for="date_range">Выберите диапазон:</label>
+        <select id="date_range" name="date_range" onchange="showDateInput()">
+            <option value="day">День</option>
+            <option value="month">Месяц</option>
+            <option value="year">Год</option>
+        </select>
+        <div id="day_input" style="display:none;">
+            <label for="selected_date">Выберите дату:</label>
+            <input type="date" id="selected_date" name="selected_date">
+        </div>
+        <div id="month_input" style="display:none;">
+            <label for="selected_month">Выберите месяц:</label>
+            <input type="month" id="selected_month" name="selected_month">
+        </div>
+        <div id="year_input" style="display:none;">
+            <label for="selected_year">Выберите год:</label>
+            <input type="number" id="selected_year" name="selected_year" min="2000" max="{{ current_year }}">
+        </div>
+        <button type="submit">Показать отчет</button>
+    </form>
+    <table>
+        <thead>
+            <tr>
+                <th>Табельный номер</th>
+                <th>ФИО</th>
+                <th>Смена</th>
+                <th>Бригада</th>
+                <th>Дата</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for report in reports %}
+                <tr>
+                    <td>{{ report.tabnumber }}</td>
+                    <td>{{ report.owner_name }}</td>
+                    <td>{{ report.shift }}</td>
+                    <td>{{ report.brigade }}</td>
+                    <td>{{ report.date }}</td>
+                    <td>{{ report.status }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <script>
+        function showDateInput() {
+            var dateRange = document.getElementById('date_range').value;
+            document.getElementById('day_input').style.display = 'none';
+            document.getElementById('month_input').style.display = 'none';
+            document.getElementById('year_input').style.display = 'none';
+            if (dateRange === 'day') {
+                document.getElementById('day_input').style.display = 'block';
+            } else if (dateRange === 'month') {
+                document.getElementById('month_input').style.display = 'block';
+            } else if (dateRange === 'year') {
+                document.getElementById('year_input').style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
