@@ -4,6 +4,7 @@ from .models import Employee, Report
 from employee_data.models import ShiftSchedule
 from datetime import datetime
 from django.db import connection
+import base64
 
 # Хранение списка введенных сотрудников
 employee_list = []
@@ -91,6 +92,19 @@ def employee_status(request):
                         status = 'работает' if current_shift == current_brigade_shift else 'не работает'
                     print(f"Статус сотрудника: {status}")
 
+                    # Получаем фото сотрудника из базы данных
+                    with connection.cursor() as cursor:
+                        cursor.execute("SELECT Picture FROM OrionTMZ.dbo.pList WHERE TabNumber = %s", [employee.tabnumber])
+                        row = cursor.fetchone()
+
+                    if row:
+                        binary_data = row[0]  # Получаем бинарные данные
+                        photo_base64 = base64.b64encode(binary_data).decode('utf-8')  # Преобразуем в base64 для отображения в HTML
+                        print("✅ Файл успешно декодирован!")
+                    else:
+                        print("❌ Данные не найдены")
+                        photo_base64 = None
+
                     # Проверяем, есть ли запись в отчете на текущую дату
                     report_exists = Report.objects.filter(tabnumber=employee.tabnumber, date=current_date).exists()
                     if report_exists or status == 'не работает':
@@ -123,7 +137,8 @@ def employee_status(request):
                         'current_time': current_time,
                         'employee_list': employee_list,
                         'shift_schedule': shift_schedule,
-                        'shift': shift
+                        'shift': shift,
+                        'photo': photo_base64  # Добавляем фото в контекст
                     }
                     print(f"Контекст для шаблона: {context}")
                     return render(request, 'employee_status.html', context)
