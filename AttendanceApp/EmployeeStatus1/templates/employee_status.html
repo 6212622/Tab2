@@ -83,7 +83,13 @@
                     <div class="employee-info {% if status == 'работает' %}status-working{% else %}status-not-working{% endif %}">
                         <p><strong>ФИО:</strong> {{ employee.OwnerName }}</p>
                         <p><strong>Табельный номер:</strong> {{ employee.tabnumber }}</p>
-                        <p><strong>Статус:</strong> {{ current_brigade_shift }}</p>
+                        <p><strong>Статус:</strong> 
+                            {% if shift == '3' %}
+                                {{ status }}
+                            {% else %}
+                                {{ current_brigade_shift }}
+                            {% endif %}
+                        </p>
                         <p><strong>Текущая смена времени:</strong> {{ current_shift }}</p>
                         <p><strong>Дата:</strong> {{ current_date }}</p>
                         <p><strong>Время:</strong> {{ current_time }}</p>

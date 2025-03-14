@@ -41,13 +41,17 @@ def employee_status(request):
             with connection.cursor() as cursor:
                 cursor.execute("SELECT FullName, Schedule, TabNumber FROM tabel.dbo.EmployeeSchedule WHERE TabNumber = %s", [employee.tabnumber])
                 schedule_row = cursor.fetchone()
-                print(schedule_row)
 
             if schedule_row:
                 schedule = str(schedule_row[1])  # Преобразуем в строку, если это не строка
-                shift = schedule[0]  # Первая цифра - номер смены
-                brigade = schedule[1]  # Вторая цифра - номер бригады
-                print(f"Расписание сотрудника: смена {shift}, бригада {brigade}")
+                if len(schedule) < 2 and schedule == '3':
+                    shift = schedule  # Первая цифра 3
+                    brigade = 0  
+                    print(f"Расписание сотрудника: смена {shift}, бригада {brigade}")
+                else:
+                    shift = schedule[0]  # Первая цифра - номер смены
+                    brigade = schedule[1]  # Вторая цифра - номер бригады
+                    print(f"Расписание сотрудника: смена {shift}, бригада {brigade}")
 
                 # Получаем расписание смен на текущую дату
                 with connection.cursor() as cursor:
@@ -78,7 +82,13 @@ def employee_status(request):
                     print(f"Текущая смена бригады: {current_brigade_shift}")
 
                     # Проверяем, находится ли сотрудник в текущей смене
-                    status = 'работает' if current_shift == current_brigade_shift else 'не работает'
+                    if shift == '3':
+                        if current_date.weekday() >= 5:  # Суббота и воскресенье
+                            status = 'не работает'
+                        else:
+                            status = 'работает'
+                    else:
+                        status = 'работает' if current_shift == current_brigade_shift else 'не работает'
                     print(f"Статус сотрудника: {status}")
 
                     # Добавляем сотрудника в список
@@ -96,7 +106,8 @@ def employee_status(request):
                         'current_date': current_date,
                         'current_time': current_time,
                         'employee_list': employee_list,
-                        'shift_schedule': shift_schedule
+                        'shift_schedule': shift_schedule,
+                        'shift': shift
                     }
                     print(f"Контекст для шаблона: {context}")
                     return render(request, 'employee_status.html', context)
