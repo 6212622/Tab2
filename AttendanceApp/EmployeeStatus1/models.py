@@ -28,8 +28,8 @@ class Report(models.Model):
 
 class Smeny1C(models.Model):
     id = models.AutoField(primary_key=True)
-    field1 = models.CharField(max_length=255)  # Замените на реальные поля таблицы
-    field2 = models.CharField(max_length=255)  # Замените на реальные поля таблицы
+    tabnumber = models.CharField(max_length=255)  # Замените на реальные поля таблицы
+    smena = models.CharField(max_length=255)  # Замените на реальные поля таблицы
 
     class Meta:
         managed = False  # Django не будет управлять этой таблицей

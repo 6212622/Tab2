@@ -94,8 +94,8 @@ DATABASES = {
     'test_db': {  # Новое подключение
         'ENGINE': 'mssql',
         'NAME': 'Test',
-        'USER': config('DB_USER', default=''),  # Укажите имя пользователя
-        'PASSWORD': config('DB_PASSWORD', default=''),  # Укажите пароль
+        'USER': 'sa',  # Укажите имя пользователя
+        'PASSWORD': 'M()snterK!112233',  # Укажите пароль
         'HOST': '192.168.102.49',
         'PORT': '',
         'OPTIONS': {

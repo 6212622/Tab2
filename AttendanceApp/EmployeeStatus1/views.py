@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from .models import Employee, Report
 from employee_data.models import ShiftSchedule
 from datetime import datetime
-from django.db import connection
+from django.db import connections, connection
 import base64
 
 # Хранение списка введенных сотрудников
@@ -38,13 +38,73 @@ def employee_status(request):
             current_time = datetime.now().time()
             print(f"Текущая дата: {current_date}, текущее время: {current_time}")
 
-            # Получаем расписание сотрудника из таблицы EmployeeSchedule
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT FullName, Schedule, TabNumber FROM tabel.dbo.EmployeeSchedule WHERE TabNumber = %s", [employee.tabnumber])
-                schedule_row = cursor.fetchone()
+            # Получаем расписание сотрудника из таблицы smeny1c
+            # Получаем расписание сотрудника из таблицы smeny1c
+            with connections['test_db'].cursor() as cursor:
+                cursor.execute("SELECT tabnumber, smena FROM Test.dbo.smeny1c WHERE tabnumber = %s", [employee.tabnumber])
+                smeny_row = cursor.fetchone()
+            
+            if smeny_row:
+                smena = smeny_row[1]
+                print(f"Смена и бригада из таблицы smeny1c: {smena}")
 
-            if schedule_row:
-                schedule = str(schedule_row[1])  # Преобразуем в строку, если это не строка
+                # Определяем смену и бригаду
+                shift = None
+                brigade = None
+
+                if "График сменности №1 (Бригада 1)" in smena:
+                    shift = '1'
+                    brigade = '1'
+                elif "График сменности №1 (Бригада 2)" in smena:
+                    shift = '1'
+                    brigade = '2'
+                elif "График сменности №2 (Бригада 1)" in smena:
+                    shift = '2'
+                    brigade = '1'
+                elif "График сменности №2 (Бригада 2)" in smena:
+                    shift = '2'
+                    brigade = '2'
+                elif "График сменности №2 (Бригада 3)" in smena:
+                    shift = '2'
+                    brigade = '3'
+                elif "График сменности №2 (Бригада 4)" in smena:
+                    shift = '2'
+                    brigade = '4'
+                elif "Пятидневка рабочая неделя" in smena or "Пятидневная рабочая неделя" in smena:
+                    shift = '3'
+                    brigade = None
+                else:
+                    print("Неизвестный график сменности")
+
+                print(f"Определены смена: {shift}, бригада: {brigade}")
+
+
+                # Проверяем статус сотрудника
+                if shift == '3':
+                    if current_date.weekday() >= 5:  # Суббота и воскресенье
+                        status = 'не работает'
+                    else:
+                        status = 'работает'
+                else:
+                    # Сопоставление смен и бригад
+                    shift_mapping = {
+                        ('2', '1'): 'Бригада 1',
+                        ('2', '2'): 'Бригада 2',
+                        ('2', '3'): 'Бригада 3',
+                        ('2', '4'): 'Бригада 4',
+                    }
+                    current_brigade_shift = shift_mapping.get((shift, brigade))
+                    status = 'работает' if current_brigade_shift else 'не работает'
+
+                    print(f"Статус сотрудника: {status}")
+            else:
+                print("Смена и бригада не найдены в таблице smeny1c")
+                shift = None
+                brigade = None
+                status = 'неизвестно'
+
+            if smeny_row:
+                schedule = str(smeny_row[1])  # Преобразуем в строку, если это не строка
                 if len(schedule) < 2 and schedule == '3':
                     shift = schedule  # Первая цифра 3
                     brigade = 0  
@@ -145,9 +205,7 @@ def employee_status(request):
                 else:
                     print("❌ Расписание на текущую дату не найдено")
                     return HttpResponse("Расписание на текущую дату не найдено")
-            else:
-                print("❌ Расписание сотрудника не найдено")
-                return HttpResponse("Расписание сотрудника не найдено")
+            
         except ShiftSchedule.DoesNotExist:
             print("Расписание на текущую дату не найдено")
             return HttpResponse("Расписание на текущую дату не найдено")
