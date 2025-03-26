@@ -156,19 +156,33 @@ def employee_status(request):
 
 from django.shortcuts import render
 from .models import Report
+from django.http import HttpResponseBadRequest
+from datetime import datetime
 
 def report_view(request):
     reports = Report.objects.all().order_by('-date')
     if request.method == 'POST':
         date_range = request.POST.get('date_range')
+        selected_date = request.POST.get('selected_date')
+
+        # Если дата не указана, берем сегодняшнюю дату
         if date_range == 'day':
-            selected_date = request.POST.get('selected_date')
-            reports = Report.objects.filter(date=selected_date).order_by('-date')
+            if not selected_date:
+                selected_date = datetime.now().strftime('%Y-%m-%d')  # Текущая дата в формате YYYY-MM-DD
+            try:
+                reports = Report.objects.filter(date=selected_date).order_by('-date')
+            except ValueError:
+                return HttpResponseBadRequest("Неверный формат даты. Убедитесь, что дата указана в формате YYYY-MM-DD.")
         elif date_range == 'month':
             selected_month = request.POST.get('selected_month')
+            if not selected_month:
+                selected_month = datetime.now().strftime('%Y-%m')  # Текущий месяц в формате YYYY-MM
             year, month = selected_month.split('-')
             reports = Report.objects.filter(date__year=year, date__month=month).order_by('-date')
         elif date_range == 'year':
             selected_year = request.POST.get('selected_year')
+            if not selected_year:
+                selected_year = datetime.now().strftime('%Y')  # Текущий год
             reports = Report.objects.filter(date__year=selected_year).order_by('-date')
+
     return render(request, 'report1.html', {'reports': reports})

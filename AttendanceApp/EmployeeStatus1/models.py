@@ -25,3 +25,13 @@ class Report(models.Model):
 
     def __str__(self):
         return f"{self.tabnumber} - {self.owner_name} - {self.date}"
+
+class Smeny1C(models.Model):
+    id = models.AutoField(primary_key=True)
+    field1 = models.CharField(max_length=255)  # Замените на реальные поля таблицы
+    field2 = models.CharField(max_length=255)  # Замените на реальные поля таблицы
+
+    class Meta:
+        managed = False  # Django не будет управлять этой таблицей
+        db_table = 'smeny1c'
+        app_label = 'employee_data'
