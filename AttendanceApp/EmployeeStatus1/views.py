@@ -16,8 +16,9 @@ def employee_status(request):
         if not card_number:
             print("Номер карты не введен")
             return HttpResponse("Номер карты не введен")
-
-        last_four_digits = card_number[-4:]
+        if len(card_number) <= 4:
+            
+            last_four_digits = card_number[-4:]
         print(f"Получен номер карты: {card_number}, последние четыре цифры: {last_four_digits}")
 
         try:
