@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Ежемесячный отчет</title>
+</head>
+<body>
+    <h1>Ежемесячный отчет за {{ current_month }}</h1>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Табельный номер</th>
+                <th>ФИО</th>
+                {% for day in range(1, 32) %}
+                    <th>{{ day }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for tabnumber, data in monthly_data.items %}
+                <tr>
+                    <td>{{ tabnumber }}</td>
+                    <td>{{ data.name }}</td>
+                    {% for day in data.days %}
+                        <td>{{ day }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{% url 'export_to_excel' %}">Экспортировать в Excel</a>
+</body>
+</html>

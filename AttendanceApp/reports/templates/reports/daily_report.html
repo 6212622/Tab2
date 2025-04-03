@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Ежедневный отчет</title>
+</head>
+<body>
+    <h1>Ежедневный отчет за {{ today }}</h1>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Табельный номер</th>
+                <th>ФИО</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for emp in daily_data %}
+                <tr>
+                    <td>{{ emp.tabnumber }}</td>
+                    <td>{{ emp.OwnerName }}</td>
+                    <td>{{ emp.status }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

@@ -5,6 +5,15 @@ from employee_data.models import ShiftSchedule
 from datetime import datetime
 from django.db import connections, connection
 import base64
+from django.shortcuts import render
+from .models import Report
+from django.http import HttpResponseBadRequest
+from datetime import datetime
+import locale
+from babel.dates import format_date
+
+# Устанавливаем локаль на русский
+locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 
 # Хранение списка введенных сотрудников
 employee_list = []
@@ -16,14 +25,28 @@ def employee_status(request):
         if not card_number:
             print("Номер карты не введен")
             return HttpResponse("Номер карты не введен")
-        if len(card_number) <= 4:
-            
-            last_four_digits = card_number[-4:]
-        print(f"Получен номер карты: {card_number}, последние четыре цифры: {last_four_digits}")
 
-        try:
-            employees = Employee.find_by_last_four_digits(last_four_digits)
-            if not employees:
+        # Проверка: табельный номер или номер карты
+        if len(card_number) > 4:
+            last_four_digits = card_number[-4:]
+            print(f"Получен номер карты: {card_number}, последние четыре цифры: {last_four_digits}")
+            employee_data = Employee.find_by_last_four_digits(last_four_digits)
+            if not employee_data:
+                print("Сотрудник не найден")
+                context = {
+                    'employee_list': employee_list,
+                    'not_found': True
+                }
+                return render(request, 'employee_status.html', context)
+            else:
+                employee = Employee(
+                    OwnerName=employee_data[0][0],  # Используем данные из employee_data
+                    ProcessedCodeP=employee_data[0][1],  # Неизвестно, что это за поле, оставляем 0
+                    tabnumber=employee_data[0][2]
+                )
+        else:
+            employee_data = Employee.find_by_tabnumber(card_number)  # Сохраняем результат в employee_data
+            if not employee_data:
                 print("Сотрудник не найден")
                 context = {
                     'employee_list': employee_list,
@@ -31,15 +54,22 @@ def employee_status(request):
                 }
                 return render(request, 'employee_status.html', context)
 
+            # Создаем объект Employee
+            else:
+                employee = Employee(
+                OwnerName=employee_data['fio'],  # Используем данные из employee_data
+                ProcessedCodeP=0,  # Неизвестно, что это за поле, оставляем 0
+                tabnumber=employee_data['tabnumber']
+                )
+        print(f"Найден сотрудник: {employee.OwnerName}, табельный номер: {employee.tabnumber}")
+
+        try:
             # Предполагаем, что возвращается одна запись
-            employee_data = employees[0]
-            employee = Employee(OwnerName=employee_data[0], ProcessedCodeP=employee_data[1], tabnumber=employee_data[2])
             print(f"Найден сотрудник: {employee.OwnerName}, табельный номер: {employee.tabnumber}, ProcessedCodeP: {employee.ProcessedCodeP}")
             current_date = datetime.now().date()
             current_time = datetime.now().time()
             print(f"Текущая дата: {current_date}, текущее время: {current_time}")
-
-            # Получаем расписание сотрудника из таблицы smeny1c
+        
             # Получаем расписание сотрудника из таблицы smeny1c
             with connections['test_db'].cursor() as cursor:
                 cursor.execute("SELECT tabnumber, smena FROM Test.dbo.smeny1c WHERE tabnumber = %s", [employee.tabnumber])
@@ -94,6 +124,8 @@ def employee_status(request):
                         ('2', '3'): 'Бригада 3',
                         ('2', '4'): 'Бригада 4',
                     }
+                    print(f"Текущая смена: {shift_mapping.get((shift, brigade))}")
+                    # Получаем расписание смен на текущую дату
                     current_brigade_shift = shift_mapping.get((shift, brigade))
                     status = 'работает' if current_brigade_shift else 'не работает'
 
@@ -107,12 +139,12 @@ def employee_status(request):
             if smeny_row:
                 schedule = str(smeny_row[1])  # Преобразуем в строку, если это не строка
                 if len(schedule) < 2 and schedule == '3':
-                    shift = schedule  # Первая цифра 3
-                    brigade = 0  
+                    # shift = schedule  # Первая цифра 3
+                    # brigade = 0  
                     print(f"Расписание сотрудника: смена {shift}, бригада {brigade}")
                 else:
-                    shift = schedule[0]  # Первая цифра - номер смены
-                    brigade = schedule[1]  # Вторая цифра - номер бригады
+                    # shift = schedule[0]  # Первая цифра - номер смены
+                    # brigade = schedule[1]  # Вторая цифра - номер бригады
                     print(f"Расписание сотрудника: смена {shift}, бригада {brigade}")
 
                 # Получаем расписание смен на текущую дату
@@ -189,12 +221,19 @@ def employee_status(request):
                         'status': status
                     })
 
+                    # Получаем текущую дату
+                    current_date = datetime.now()
+
+                    # Форматируем дату на русском языке
+                    formatted_date = format_date(current_date, format='d MMMM y', locale='ru')
+                    print(f"Дата: {formatted_date}")
+
                     context = {
                         'employee': employee,
                         'status': status,
                         'current_shift': current_shift,
                         'current_brigade_shift': current_brigade_shift,
-                        'current_date': current_date,
+                        'current_date': formatted_date,
                         'current_time': current_time,
                         'employee_list': employee_list,
                         'shift_schedule': shift_schedule,
@@ -213,10 +252,7 @@ def employee_status(request):
     print("Метод запроса не POST, отображение пустой формы")
     return render(request, 'employee_status.html', {'employee_list': employee_list})
 
-from django.shortcuts import render
-from .models import Report
-from django.http import HttpResponseBadRequest
-from datetime import datetime
+
 
 def report_view(request):
     reports = Report.objects.all().order_by('-date')
@@ -245,3 +281,4 @@ def report_view(request):
             reports = Report.objects.filter(date__year=selected_year).order_by('-date')
 
     return render(request, 'report1.html', {'reports': reports})
+

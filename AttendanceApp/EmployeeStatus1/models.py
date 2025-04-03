@@ -13,7 +13,18 @@ class Employee(models.Model):
         with connection.cursor() as cursor:
             cursor.execute("SELECT * FROM tabel.dbo.tabbnumber WHERE ProcessedCodeP = %s", [last_four_digits])
             rows = cursor.fetchall()
+            for index, row in enumerate(rows):
+                print(f"Строка {index}: {row}")
             return rows
+
+    @staticmethod
+    def find_by_tabnumber(tabnumber):
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT TOP 1 CONCAT(name, ' ', girstname, ' ', midname) AS fio, tabnumber FROM OrionTMZ.dbo.LIST_users WHERE tabnumber = %s", [tabnumber])
+            row = cursor.fetchone()
+            if row:
+                return {'fio': row[0], 'tabnumber': row[1]}  # Возвращаем словарь
+            return None  # Если данных нет, возвращаем None
 
 class Report(models.Model):
     tabnumber = models.CharField(max_length=255)
