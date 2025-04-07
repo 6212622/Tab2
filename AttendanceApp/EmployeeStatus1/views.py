@@ -129,7 +129,7 @@ def employee_status(request):
                     current_brigade_shift = shift_mapping.get((shift, brigade))
                     status = 'работает' if current_brigade_shift else 'не работает'
 
-                    print(f"Статус сотрудника: {status}")
+                    print(f"Статус сотрудника (ид1): {status}")
             else:
                 print("Смена и бригада не найдены в таблице smeny1c")
                 shift = None
@@ -183,7 +183,7 @@ def employee_status(request):
                             status = 'работает'
                     else:
                         status = 'работает' if current_shift == current_brigade_shift else 'не работает'
-                    print(f"Статус сотрудника: {status}")
+                    print(f"Статус сотрудника (ид 2): {status}")
 
                     # Получаем фото сотрудника из базы данных
                     with connection.cursor() as cursor:
@@ -240,7 +240,7 @@ def employee_status(request):
                         'shift': shift,
                         'photo': photo_base64  # Добавляем фото в контекст
                     }
-                    print(f"Контекст для шаблона: {context}")
+                    # print(f"Контекст для шаблона: {context}")
                     return render(request, 'employee_status.html', context)
                 else:
                     print("❌ Расписание на текущую дату не найдено")
