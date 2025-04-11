@@ -109,6 +109,8 @@ def employee_status(request):
 
                 print(f"Определены смена: {shift}, бригада: {brigade}")
 
+                if brigade is None:
+                    brigade = '0'  # Устанавливаем значение по умолчанию
 
                 # Проверяем статус сотрудника
                 if shift == '3':
@@ -279,6 +281,12 @@ def report_view(request):
             if not selected_year:
                 selected_year = datetime.now().strftime('%Y')  # Текущий год
             reports = Report.objects.filter(date__year=selected_year).order_by('-date')
+
+    selected_month = request.GET.get('month')
+    if selected_month:
+        month = int(selected_month)
+    else:
+        month = datetime.now().month
 
     return render(request, 'report1.html', {'reports': reports})
 

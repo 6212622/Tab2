@@ -2,34 +2,68 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.db.models import Count
 from datetime import datetime, timedelta
+from calendar import monthrange
 from EmployeeStatus1.views import employee_list  # Используем данные из employee_list
 import openpyxl
 from openpyxl.styles import Alignment
 from EmployeeStatus1.models import Report
+from .daily_report import get_daily_report
+from .monthly_report import get_monthly_report
 
-def daily_report(request):
-    # Ежедневный отчет
-    today = datetime.now().date()
-    daily_data = [emp for emp in employee_list if emp['status'] == 'работает' and emp['date'] == today]
+def daily_report_view(request):
+    reports = get_daily_report()
+    return render(request, 'reports/daily_report.html', {'reports': reports})
 
-    return render(request, 'reports/daily_report.html', {'daily_data': daily_data, 'today': today})
+def monthly_report_view(request):
+    selected_month = request.GET.get('month')
+    selected_year = request.GET.get('year')
 
+    if selected_month and selected_year:
+        try:
+            month = int(selected_month)
+            year = int(selected_year)
+        except ValueError:
+            return HttpResponse("Неверный формат месяца или года.")
+    else:
+        # Если месяц и год не указаны, используем текущие
+        current_date = datetime.now()
+        month = current_date.month
+        year = current_date.year
 
-def monthly_report(request):
-    # Ежемесячный отчет
-    current_month = datetime.now().month
-    current_year = datetime.now().year
+    # Получаем отчеты за указанный месяц и год
+    reports = get_monthly_report(month=month, year=year)
 
-    # Генерация данных для таблицы
-    monthly_data = {}
-    for emp in employee_list:
-        if emp['status'] == 'работает' and emp['date'].month == current_month and emp['date'].year == current_year:
-            if emp['tabnumber'] not in monthly_data:
-                monthly_data[emp['tabnumber']] = {'name': emp['OwnerName'], 'days': [0] * 31}
-            monthly_data[emp['tabnumber']]['days'][emp['date'].day - 1] = 1
+    # Получаем количество дней в месяце
+    days_in_month = monthrange(year, month)[1]
+    dates = [f"{day:02d}.{month:02d}.{year}" for day in range(1, days_in_month + 1)]
 
-    return render(request, 'reports/monthly_report.html', {'monthly_data': monthly_data, 'current_month': current_month})
+    # Подготавливаем данные для таблицы
+    employees = {}
+    daily_totals = [0] * days_in_month  # Инициализируем список для подсчета общей суммы по дням
+    for report in reports:
+        if report.tabnumber not in employees:
+            employees[report.tabnumber] = {
+                'fio': report.owner_name,
+                'days': [''] * days_in_month  # Инициализируем пустыми значениями
+            }
+        day = report.date.day
+        employees[report.tabnumber]['days'][day - 1] = '1'  # Отмечаем присутствие
+        daily_totals[day - 1] += 1  # Увеличиваем счетчик для соответствующего дня
 
+    # Преобразуем данные в список для удобства отображения
+    employee_data = [
+        {'tabnumber': tabnumber, 'fio': data['fio'], 'days': data['days']}
+        for tabnumber, data in employees.items()
+    ]
+
+    return render(request, 'reports/monthly_report.html', {
+        'employee_data': employee_data,
+        'dates': dates,
+        'selected_month': month,
+        'selected_year': year,
+        'months': list(range(1, 13)),
+        'daily_totals': daily_totals,  # Передаем общую сумму по дням
+    })
 
 def export_to_excel(request):
     # Экспорт в Excel

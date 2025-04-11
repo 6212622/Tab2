@@ -5,21 +5,27 @@
     <title>Ежедневный отчет</title>
 </head>
 <body>
-    <h1>Ежедневный отчет за {{ today }}</h1>
+    <h1>Ежедневный отчет</h1>
     <table border="1">
         <thead>
             <tr>
                 <th>Табельный номер</th>
                 <th>ФИО</th>
+                <th>Смена</th>
+                <th>Бригада</th>
+                <th>Дата</th>
                 <th>Статус</th>
             </tr>
         </thead>
         <tbody>
-            {% for emp in daily_data %}
+            {% for report in reports %}
                 <tr>
-                    <td>{{ emp.tabnumber }}</td>
-                    <td>{{ emp.OwnerName }}</td>
-                    <td>{{ emp.status }}</td>
+                    <td>{{ report.tabnumber }}</td>
+                    <td>{{ report.owner_name }}</td>
+                    <td>{{ report.shift }}</td>
+                    <td>{{ report.brigade }}</td>
+                    <td>{{ report.date }}</td>
+                    <td>{{ report.status }}</td>
                 </tr>
             {% endfor %}
         </tbody>

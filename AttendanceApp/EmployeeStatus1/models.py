@@ -37,6 +37,10 @@ class Report(models.Model):
     def __str__(self):
         return f"{self.tabnumber} - {self.owner_name} - {self.date}"
 
+    def set_default_brigade(self):
+        if self.brigade is None:
+            self.brigade = '0'  # Устанавливаем значение по умолчанию
+
 class Smeny1C(models.Model):
     id = models.AutoField(primary_key=True)
     tabnumber = models.CharField(max_length=255)  # Замените на реальные поля таблицы

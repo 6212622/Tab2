@@ -2,32 +2,83 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Ежемесячный отчет</title>
+    <title>Отчет {{ month_name }} {{ selected_year }} года</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .vertical-text {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            white-space: nowrap;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #f9f9f9;
+        }
+        @media print {
+            @page {
+                size: A4 landscape; /* Альбомная ориентация */
+                margin: 20mm;
+            }
+            button, #month, #year, #month_t, #year_t {
+                display: none; /* Скрыть кнопку печати при печати */
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Ежемесячный отчет за {{ current_month }}</h1>
-    <table border="1">
+    <h1>Ежемесячный отчет</h1>
+    <form method="GET">
+        <label for="month" id="month_t">Месяц:</label>
+        <select id="month" name="month">
+            {% for m in months %}
+                <option value="{{ m }}" {% if m == selected_month %}selected{% endif %}>{{ m }}</option>
+            {% endfor %}
+        </select>
+        <label for="year" id="year_t">Год:</label>
+        <input type="number" id="year" name="year" value="{{ selected_year }}" min="2000" max="2100">
+        <button type="submit">Показать</button>
+    </form>
+    <button onclick="window.print()">Печать</button> <!-- Кнопка для печати -->
+    <table>
         <thead>
             <tr>
+                <th>№</th>
                 <th>Табельный номер</th>
                 <th>ФИО</th>
-                {% for day in range(1, 32) %}
-                    <th>{{ day }}</th>
+                {% for date in dates %}
+                    <th class="vertical-text">{{ date }}</th>
                 {% endfor %}
             </tr>
         </thead>
         <tbody>
-            {% for tabnumber, data in monthly_data.items %}
+            {% for employee in employee_data %}
                 <tr>
-                    <td>{{ tabnumber }}</td>
-                    <td>{{ data.name }}</td>
-                    {% for day in data.days %}
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ employee.tabnumber }}</td>
+                    <td>{{ employee.fio }}</td>
+                    {% for day in employee.days %}
                         <td>{{ day }}</td>
                     {% endfor %}
                 </tr>
             {% endfor %}
+            <tr class="total-row">
+                <td colspan="3">Общая сумма</td>
+                {% for total in daily_totals %}
+                    <td>{{ total }}</td>
+                {% endfor %}
+            </tr>
         </tbody>
     </table>
-    <a href="{% url 'export_to_excel' %}">Экспортировать в Excel</a>
 </body>
 </html>
